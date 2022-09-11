@@ -263,7 +263,7 @@ primary-header {
 
 .flex {
 	display: flex;
-	justify-content: space-around;
+	/*justify-content: space-around;*/
 	gap: var(--gap, 1rem);
 }
 
