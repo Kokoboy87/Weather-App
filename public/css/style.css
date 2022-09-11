@@ -160,6 +160,8 @@ primary-header {
 	text-decoration: none;
 	color: aliceblue;
 	text-shadow: 2px 2px 4px #000000;
+	margin: 0.5rem;
+	padding: 0.5rem;
 }
 
 .primary-navigation a > [aria-hidden='true'] {
