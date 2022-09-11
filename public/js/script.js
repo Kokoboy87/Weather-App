@@ -21,7 +21,7 @@ weatherForm.addEventListener('submit', (event) => {
 			} else {
 				let { location } = data;
 				messageOne.textContent = data.location;
-				messageTwo.innerHTML = data.forecast;
+				messageTwo.textContent = data.forecast;
 				document.body.style.backgroundImage = "url('https://source.unsplash.com/1600x900/?" + location + ",weather')";
 			}
 		});
