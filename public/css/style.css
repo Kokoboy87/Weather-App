@@ -130,6 +130,10 @@ h1 {
 	text-shadow: 2px 2px 4px #000000;
 }
 
+nav {
+	width: 40%;
+}
+
 primary-header {
 	align-items: center;
 	justify-content: space-between;
@@ -261,6 +265,7 @@ primary-header {
 
 .flex {
 	display: flex;
+	justify-content: space-around;
 	gap: var(--gap, 1rem);
 }
 
