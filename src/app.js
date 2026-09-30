@@ -95,7 +95,32 @@ app.get('/help/*', (req, res) => {
 	})
 })
 
-app.get('/background', (req, res) => {
+// Search Unsplash and resolve with the first photo URL, or null if there are no results
+const searchUnsplash = (query, accessKey) =>
+	new Promise((resolve, reject) => {
+		const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&orientation=landscape&per_page=1&client_id=${accessKey}&fm=webp&fit=max&w=1600&q=80`
+
+		https
+			.get(url, (apiRes) => {
+				let data = ''
+
+				apiRes.on('data', (chunk) => {
+					data += chunk
+				})
+
+				apiRes.on('end', () => {
+					try {
+						const results = JSON.parse(data).results
+						resolve(results && results[0] && results[0].urls?.full ? results[0].urls.full : null)
+					} catch (err) {
+						reject(err)
+					}
+				})
+			})
+			.on('error', reject)
+	})
+
+app.get('/background', async (req, res) => {
 	const city = req.query.city || 'weather'
 	const accessKey = process.env.UNSPLASH_ACCESS_KEY
 
@@ -103,39 +128,27 @@ app.get('/background', (req, res) => {
 		return res.status(500).send({ error: 'Unsplash access key is missing' })
 	}
 
-	const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(city + ' city skyline landscape')}&orientation=landscape&per_page=1&client_id=${accessKey}&fm=webp&fit=max&w=1600&q=80`
+	// Drop street numbers and postal codes, e.g. "1600 Pennsylvania Avenue Northwest, Washington, District of Columbia 20500"
+	const parts = city
+		.split(',')
+		.map((part) => part.trim())
+		.filter((part) => part && !/\d/.test(part))
 
-	const https = require('https')
+	// Try the most specific search first, then broaden it for smaller towns
+	const queries = [...new Set([`${parts.join(' ')} city skyline landscape`, parts.slice(0, 2).join(' '), parts[0]])].filter(Boolean)
 
-	https
-		.get(url, (apiRes) => {
-			let data = ''
-
-			apiRes.on('data', (chunk) => {
-				data += chunk
-			})
-
-			apiRes.on('end', () => {
-				try {
-					const json = JSON.parse(data)
-					const results = json.results
-
-					if (!results || results.length === 0 || !results[0].urls?.full) {
-						return res.status(404).send({ error: 'No image found for this location' })
-					}
-
-					const imageUrl = results[0].urls.full
-					res.send({ url: imageUrl })
-				} catch (err) {
-					console.error('Parse error:', err)
-					res.status(500).send({ error: 'Failed to parse image data' })
-				}
-			})
-		})
-		.on('error', (err) => {
-			console.error('Request error:', err)
-			res.status(500).send({ error: 'Image fetch failed' })
-		})
+	try {
+		for (const query of queries) {
+			const imageUrl = await searchUnsplash(query, accessKey)
+			if (imageUrl) {
+				return res.send({ url: imageUrl })
+			}
+		}
+		res.status(404).send({ error: 'No image found for this location' })
+	} catch (err) {
+		console.error('Image fetch failed:', err)
+		res.status(500).send({ error: 'Image fetch failed' })
+	}
 })
 
 // Method to navigate to the 404 page route
